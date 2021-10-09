@@ -18,14 +18,14 @@ class Grass(Cell):
         self.rect.center = (x+Cells_edge//2, y+Cells_edge//2)
         self.activated=False
     def activate(self):
-        self.image = pygame.image.load(path.join(img_dir, "Поле_Активированное.jpg"))
+        self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "Поле_Активированное.jpg")), (Cells_edge, Cells_edge))
         self.activated=True
     def deactivate(self):
-        self.image = pygame.image.load(path.join(img_dir, "Поле.jpg"))
+        self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "Поле.jpg")), (Cells_edge, Cells_edge))
         self.activated=False
 #Константы
-Width=640
-Height=480
+Width=1080
+Height=640
 FPS = 60
 
 Cells_edge = 20 #Изменять только на число, которое делит и Width и Height
@@ -49,7 +49,7 @@ pygame.mixer.init()
 pygame.mixer.init()
 screen = pygame.display.set_mode((Width, Height))
 clock = pygame.time.Clock()
-pygame.display.set_caption("GameDev, ХУЛЕ!")
+pygame.display.set_caption(f"Размеры поля: {number_cells_width} на {number_cells_height} клеток")
 
 #Создание поля
 field=[[] for _ in range(number_cells_height)]
