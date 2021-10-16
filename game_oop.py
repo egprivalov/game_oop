@@ -1,5 +1,6 @@
 import pygame
 from os import path
+import random
 import ctypes
 
 #Описание классов
@@ -9,12 +10,9 @@ class Cell(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.x = x
         self.y = y
+        self.numbx = int((self.x-Width_empty)//Cells_edge)
+        self.numby = int((self.y-Height_empty)//Cells_edge)
         self.ontop = 0 #Объект находящийся на клетке. Равен нулю, в случае его отсутствия
-    def put_ontop(self, object):
-        if self.ontop != 0:
-            self.ontop=object
-        else:
-            print("Нi можливо покладати")
 
 class Grass(Cell):
     def __init__(self, x, y):
@@ -39,8 +37,10 @@ class Base(pygame.sprite.Sprite):
         self.color=player_color
         if self.color == "Blue":
             self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "База_синяя.png")), (Cells_edge*2-Cells_edge//10, Cells_edge*2-Cells_edge//10))
+            self.cells = [field[21][71], field[22][71], field[21][72], field[22][72]]
         else:
             self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "База_красная.png")), (Cells_edge * 2 - Cells_edge // 10, Cells_edge * 2 - Cells_edge // 10))
+            self.cells = [field[3][3],field[3][4],field[4][3],field[4][4]]
         self.MaxHealth = 1000
         self.health = 1000
         self.rect=self.image.get_rect()
@@ -53,10 +53,14 @@ class Base(pygame.sprite.Sprite):
 
 #Полоски здоровья
 class HealthBar(pygame.sprite.Sprite):
-    def __init__(self, color, base):
+    def __init__(self, color):
         pygame.sprite.Sprite.__init__(self)
-        self.base = base
         self.color=color
+
+class Base_HealthBar(HealthBar):
+    def __init__(self, color, base):
+        HealthBar.__init__(self, color)
+        self.base = base
         if self.color=="Red":
             self.image = pygame.Surface((Cells_edge * 10, Cells_edge))
             self.image.fill(RED)
@@ -69,13 +73,82 @@ class HealthBar(pygame.sprite.Sprite):
             self.rect = self.image.get_rect()
             self.rect.center = (Width - (Width_empty + Cells_edge * 5), Height - (Height_empty - Cells_edge * 1.5))
             self.fullwidth=self.rect.width
+
     def update(self):
         if self.color=="Red":
+            if self.base.health<0:
+                self.base.health=0
             self.image=pygame.transform.scale(self.image,(self.fullwidth-self.fullwidth*(self.base.MaxHealth-self.base.health)//self.base.MaxHealth, self.rect.height))
             self.rect=self.image.get_rect(center=((Width_empty+Cells_edge*5-self.fullwidth*(self.base.MaxHealth-self.base.health)//self.base.MaxHealth//2), (Height_empty - Cells_edge * 1.5)))
         else:
+            if self.base.health < 0:
+                self.base.health = 0
             self.image = pygame.transform.scale(self.image, (self.fullwidth - self.fullwidth * (self.base.MaxHealth - self.base.health) // self.base.MaxHealth, self.rect.height))
             self.rect = self.image.get_rect(center=(Width - (Width_empty + Cells_edge * 5 - self.fullwidth * (self.base.MaxHealth - self.base.health) // self.base.MaxHealth // 2), Height - (Height_empty - Cells_edge * 1.5)))
+
+class Unit_HealthBar(HealthBar):
+    def __init__(self, color, unit):
+        HealthBar.__init__(self, color)
+        self.unit = unit
+        self.height = Cells_edge//6
+        self.width = Cells_edge-2
+        self.image = pygame.Surface((self.width, self.height))
+        self.rect=self.image.get_rect(center=(self.unit.rect.center[0], self.unit.rect.top - Cells_edge//10))
+        if self.color == "Red":
+            self.image.fill(RED)
+        elif self.color == "Blue":
+            self.image.fill(BLUE)
+    def update(self):
+        if self.unit.health<0:
+            self.unit.health=0
+        self.image = pygame.transform.scale(self.image, (self.width*self.unit.health//self.unit.MaxHealth, self.height))
+        self.rect = self.image.get_rect(center=(self.unit.rect.center[0], self.unit.rect.top - Cells_edge//10))
+
+#Юниты
+class Unit(pygame.sprite.Sprite):
+    def __init__(self, cell, color):
+        pygame.sprite.Sprite.__init__(self)
+        self.health = 0
+        self.MaxHealth = 0
+        self.cell = cell
+        self.cell.ontop=self
+        self.cost = 0
+        self.attack_radius=0
+        self.damage=0
+        self.color=color
+
+    def update(self):
+        self.HPbar.update()
+        self.rect = self.image.get_rect(center=self.cell.rect.center)
+
+    def activate(self):
+        for i in field:
+            for j in i:
+                if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) <= self.attack_radius and j.ontop == 0:
+                    j.activate()
+                    activated_cells[1].append(j)
+        activated_cells[0].append(self.cell)
+
+    def deactivate(self):
+        for i in activated_cells:
+            for j in i:
+                j.deactivate()
+        activated_cells[0], activated_cells[1] = [], []
+
+class Footman(Unit):
+    def __init__(self, cell, color):
+        Unit.__init__(self, cell, color)
+        self.MaxHealth = 100
+        self.health = 100
+        self.cost = 10
+        self.attack_radius = 4
+        self.damage = 10
+        if color == "Red":
+            self.image=pygame.transform.scale(pygame.image.load(path.join(img_dir, "Units/red_footman.png")), (Cells_edge-1, Cells_edge-1))
+        elif color == "Blue":
+            self.image=pygame.transform.scale(pygame.image.load(path.join(img_dir, "Units/blue_footman.png")), (Cells_edge-1, Cells_edge-1))
+        self.rect=self.image.get_rect(center=self.cell.rect.center)
+        self.HPbar = Unit_HealthBar(color, self)
 
 def Field_Create():
     # Создание поля
@@ -100,9 +173,13 @@ def Field_Create():
     Base_blue = Base(Width-(Width_empty+Cells_edge*3), Height-(Height_empty+Cells_edge*3), "Blue")
     bases.add(Base_red)
     bases.add(Base_blue)
+    for i in Base_red.cells:
+        i.ontop=Base_red
+    for i in Base_blue.cells:
+        i.ontop = Base_blue
     #Полоски здоровья
-    Base_red_HealthBar = HealthBar("Red", Base_red)
-    Base_blue_HealthBar = HealthBar("Blue", Base_blue)
+    Base_red_HealthBar = Base_HealthBar("Red", Base_red)
+    Base_blue_HealthBar = Base_HealthBar("Blue", Base_blue)
     all_sprites.add(Base_red_HealthBar, Base_blue_HealthBar)
 
 def Game_Initialize():
@@ -121,8 +198,19 @@ def Draw_Screen(screen):
     field_sprites.draw(screen)
     all_sprites.draw(screen)
     bases.draw(screen)
+    units_red_sprites.draw(screen)
+    units_blue_sprites.draw(screen)
 
     pygame.display.flip()
+
+def swap_color():
+    global CurrentColor
+    if CurrentColor=="Red":
+        CurrentColor="Blue"
+    else:
+        CurrentColor="Red"
+    if len(activated_cells[0]) != 0:
+        activated_cells[0][0].ontop.deactivate()
 
 #Константы
 #Размеры экрана
@@ -140,6 +228,7 @@ Height_empty = Height // 2 - number_cells_height/2*Cells_edge  #Отступ о�
 print(f"Размеры экрана: {Width, Height}")
 print(f"Размеры поля: {Width-Width_empty*2, Height-Height_empty*2}")
 print(f"Размеры поля: {number_cells_width} на {number_cells_height} клеток")
+
 #Кадров в секунду
 FPS = 60
 #Цвета
@@ -155,13 +244,21 @@ img_dir=path.join(path.dirname(__file__), "Resources")
 
 all_sprites = pygame.sprite.Group()
 bases = pygame.sprite.Group()
+units_red = []
+units_blue = []
+units_red_sprites = pygame.sprite.Group()
+units_blue_sprites = pygame.sprite.Group()
 
 Field_Create()
 Game_Initialize()
 
+CurrentColor="Red"
+
 # Игровой цикл
 running = True
 exit_menu_running = False
+
+activated_cells=[[],[]]
 
 while running:
     clock.tick(FPS)
@@ -169,36 +266,79 @@ while running:
 
     field_sprites.update()
     all_sprites.update()
+    units_red_sprites.update()
+    units_blue_sprites.update()
 
     Draw_Screen(screen)
 
+    #Проверка событий
     for event in pygame.event.get():
         # проверить закрытие окна
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT: #Проверка закрытия окна
             running = False
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            for i in range(len(field_sprites)):
-                n = i
-                if field[n//number_cells_width][n%number_cells_width].rect.collidepoint(pygame.mouse.get_pos()):
-                    if field[n//number_cells_width][n%number_cells_width].activated:
-                        field[n//number_cells_width][n%number_cells_width].deactivate()
-                    else:
-                        field[n // number_cells_width][n % number_cells_width].activate()
-            if exit_button.rect.collidepoint(pygame.mouse.get_pos()):
-                running=False
-            if Base_red.rect.collidepoint(pygame.mouse.get_pos()):
-                Base_red.health-=100
-            if Base_red.is_destroyed():
+        if event.type == pygame.MOUSEBUTTONDOWN: #Проверка нажатия мыши
+            if event.button == 1: #Проверка нажатия левой кнопки
+                for i in range(len(field_sprites)):
+                    #Активация при нажатии
+                    if field[i // number_cells_width][i % number_cells_width].rect.collidepoint(pygame.mouse.get_pos()) and field[i // number_cells_width][i % number_cells_width].ontop != 0:
+                        if CurrentColor=="Red" and field[i // number_cells_width][i % number_cells_width].ontop in units_red_sprites:
+                            if field[i//number_cells_width][i%number_cells_width] in activated_cells[0]:
+                                field[i//number_cells_width][i%number_cells_width].ontop.deactivate()
+                            elif len(activated_cells[0]) == 1:
+                                activated_cells[0].pop(0).ontop.deactivate()
+                                field[i // number_cells_width][i % number_cells_width].ontop.activate()
+                            else:
+                                field[i // number_cells_width][i % number_cells_width].ontop.activate()
+
+                        if CurrentColor=="Blue" and field[i // number_cells_width][i % number_cells_width].ontop in units_blue_sprites:
+                            if field[i//number_cells_width][i%number_cells_width] in activated_cells[0]:
+                                field[i//number_cells_width][i%number_cells_width].ontop.deactivate()
+                            elif len(activated_cells[0]) == 1:
+                                activated_cells[0].pop(0).ontop.deactivate()
+                                field[i // number_cells_width][i % number_cells_width].ontop.activate()
+                            else:
+                                field[i // number_cells_width][i % number_cells_width].ontop.activate()
+
+                if exit_button.rect.collidepoint(pygame.mouse.get_pos()): #Проверка нажатия на кнопку выхода
+                    running=False
+                if Base_red.rect.collidepoint(pygame.mouse.get_pos()):#Урона по базе от нажатия
+                    Base_red.health-=random.randint(1,10)*50
+                if Base_blue.rect.collidepoint(pygame.mouse.get_pos()):
+                    Base_blue.health-=random.randint(1,10)*50
+            if event.button==3: #Проверка нажатия правой кнопки мыши
+                for i in range(len(field_sprites)):
+                    if field[i // number_cells_width][i % number_cells_width].rect.collidepoint(pygame.mouse.get_pos()) and field[i // number_cells_width][i % number_cells_width].ontop == 0:
+                        if CurrentColor == "Red":
+                            units_red.append(Footman(field[i // number_cells_width][i % number_cells_width], CurrentColor))
+                            units_red_sprites.add(units_red[-1])
+                            field[i // number_cells_width][i % number_cells_width].ontop = units_red[-1]
+                        else:
+                            units_blue.append(Footman(field[i // number_cells_width][i % number_cells_width], CurrentColor))
+                            units_blue_sprites.add(units_blue[-1])
+                            field[i // number_cells_width][i % number_cells_width].ontop = units_blue[-1]
+                        swap_color()
+
+            if len(activated_cells[0])!=0:
+                if event.button == 1:
+                    for i in activated_cells[1]:
+                        if i.rect.collidepoint(pygame.mouse.get_pos()):
+                            tUnit=activated_cells[0][0].ontop
+                            activated_cells[0][0].ontop = 0
+                            tUnit.cell=i
+                            i.ontop=tUnit
+                            tUnit.deactivate()
+                            swap_color()
+
+            if Base_red.is_destroyed(): #Проверка баз на разрушение
                 running=False
                 Winner="Синие"
                 exit_menu_running=True
-            if Base_blue.rect.collidepoint(pygame.mouse.get_pos()):
-                Base_blue.health-=100
             if Base_blue.is_destroyed():
                 running=False
                 Winner="Красные"
                 exit_menu_running=True
 
+#Победное меню
 while exit_menu_running:
     clock.tick(FPS)
     screen.fill(Field_GREEN)
