@@ -45,11 +45,11 @@ class Base(pygame.sprite.Sprite):
         self.health = 1000
         self.rect=self.image.get_rect()
         self.rect.center=(self.x, self.y)
-    def is_destroyed(self):
+    def is_destroyed(self): #Функция проверки разрушенности базы. Возвращает истину, в случае , если база разрушена
         global running
         if not self.health>0:
-            print('Игра окончена')
-            running=False
+            return (True)
+        return (False)
 
 #Полоски здоровья
 class HealthBar(pygame.sprite.Sprite):
@@ -111,6 +111,7 @@ def Game_Initialize():
     global screen
     pygame.init()
     pygame.mixer.init()
+    pygame.font.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
     pygame.display.set_caption(f"Размеры поля: {number_cells_width} на {number_cells_height} клеток")
@@ -146,7 +147,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
-BLUE = (33, 0, 66)
+BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 Field_GREEN = (0,32,0)
 #Путь к директории с картинками
@@ -160,6 +161,7 @@ Game_Initialize()
 
 # Игровой цикл
 running = True
+exit_menu_running = False
 
 while running:
     clock.tick(FPS)
@@ -186,9 +188,39 @@ while running:
                 running=False
             if Base_red.rect.collidepoint(pygame.mouse.get_pos()):
                 Base_red.health-=100
-                Base_red.is_destroyed()
+            if Base_red.is_destroyed():
+                running=False
+                Winner="Синие"
+                exit_menu_running=True
             if Base_blue.rect.collidepoint(pygame.mouse.get_pos()):
                 Base_blue.health-=100
-                Base_blue.is_destroyed()
+            if Base_blue.is_destroyed():
+                running=False
+                Winner="Красные"
+                exit_menu_running=True
 
+while exit_menu_running:
+    clock.tick(FPS)
+    screen.fill(Field_GREEN)
+
+    pygame.sprite.Group(exit_button).draw(screen)
+    all_sprites.update()
+
+    exit_menu=pygame.Surface((Width // 3, Height // 3))
+    exit_menu.fill(BLACK)
+    exit_menu_rect=exit_menu.get_rect(center=(Width//2, Height//2))
+
+    congr=pygame.font.SysFont("None", 22).render(f"Победили {Winner}! Поздравляем!", True, (255,255,255))
+    congr_rect=congr.get_rect(center=(Width//2, Height//2))
+
+    screen.blit(exit_menu,exit_menu_rect)
+    screen.blit(congr, congr_rect)
+    pygame.display.flip()
+
+    for event in pygame.event.get():
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.QUIT:
+                running = False
+            if exit_button.rect.collidepoint(pygame.mouse.get_pos()):
+                exit_menu_running = False
 pygame.quit()
