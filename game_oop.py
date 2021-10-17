@@ -3,8 +3,9 @@ from os import path
 import random
 import ctypes
 
-#Описание классов
-#Клетки
+# Описание классов
+# Клетки
+
 class Cell(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
@@ -12,7 +13,7 @@ class Cell(pygame.sprite.Sprite):
         self.y = y
         self.numbx = int((self.x-Width_empty)//Cells_edge)
         self.numby = int((self.y-Height_empty)//Cells_edge)
-        self.ontop = 0 #Объект находящийся на клетке. Равен нулю, в случае его отсутствия
+        self.ontop = 0  # Объект находящийся на клетке. Равен нулю, в случае его отсутствия
 
 class Grass(Cell):
     def __init__(self, x, y):
@@ -20,13 +21,21 @@ class Grass(Cell):
         self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "Поле.jpg")), (Cells_edge, Cells_edge))
         self.rect = self.image.get_rect()
         self.rect.center = (x+Cells_edge//2, y+Cells_edge//2)
-        self.activated=False
+        self.activated = False
     def activate(self):
         self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "Поле_Активированное.jpg")), (Cells_edge, Cells_edge))
-        self.activated=True
+        self.activated = True
     def deactivate(self):
         self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "Поле.jpg")), (Cells_edge, Cells_edge))
-        self.activated=False
+        self.activated = False
+    def attack_activate(self):
+        if self.ontop.color == "Red":
+            self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "Поле_Синее.jpg")), (Cells_edge, Cells_edge))
+            self.activated = True
+        else:
+            self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "Поле_Красное.jpg")), (Cells_edge, Cells_edge))
+            self.activated = True
+
 
 #Класс базы
 class Base(pygame.sprite.Sprite):
@@ -40,16 +49,18 @@ class Base(pygame.sprite.Sprite):
             self.cells = [field[21][71], field[22][71], field[21][72], field[22][72]]
         else:
             self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "База_красная.png")), (Cells_edge * 2 - Cells_edge // 10, Cells_edge * 2 - Cells_edge // 10))
-            self.cells = [field[3][3],field[3][4],field[4][3],field[4][4]]
+            self.cells = [field[2][2], field[2][3], field[3][2], field[3][3]]
         self.MaxHealth = 1000
         self.health = 1000
         self.rect=self.image.get_rect()
         self.rect.center=(self.x, self.y)
+
     def is_destroyed(self): #Функция проверки разрушенности базы. Возвращает истину, в случае , если база разрушена
         global running
         if not self.health>0:
             return (True)
         return (False)
+
 
 #Полоски здоровья
 class HealthBar(pygame.sprite.Sprite):
@@ -93,16 +104,18 @@ class Unit_HealthBar(HealthBar):
         self.height = Cells_edge//6
         self.width = Cells_edge-2
         self.image = pygame.Surface((self.width, self.height))
-        self.rect=self.image.get_rect(center=(self.unit.rect.center[0], self.unit.rect.top - Cells_edge//10))
+        self.rect = self.image.get_rect(center=(self.unit.rect.center[0], self.unit.rect.top - Cells_edge//10))
         if self.color == "Red":
             self.image.fill(RED)
         elif self.color == "Blue":
             self.image.fill(BLUE)
+
     def update(self):
         if self.unit.health<0:
             self.unit.health=0
         self.image = pygame.transform.scale(self.image, (self.width*self.unit.health//self.unit.MaxHealth, self.height))
         self.rect = self.image.get_rect(center=(self.unit.rect.center[0], self.unit.rect.top - Cells_edge//10))
+
 
 #Юниты
 class Unit(pygame.sprite.Sprite):
@@ -113,9 +126,11 @@ class Unit(pygame.sprite.Sprite):
         self.cell = cell
         self.cell.ontop=self
         self.cost = 0
-        self.attack_radius=0
-        self.damage=0
-        self.color=color
+        self.attack_radius = 0
+        self.walk_radius = 0
+        self.damage = 0
+        self.color = color
+
 
     def update(self):
         self.HPbar.update()
@@ -124,16 +139,28 @@ class Unit(pygame.sprite.Sprite):
     def activate(self):
         for i in field:
             for j in i:
-                if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) <= self.attack_radius and j.ontop == 0:
-                    j.activate()
-                    activated_cells[1].append(j)
+                if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) <= self.attack_radius and j.ontop != 0:
+                    if j.ontop.color != self.color:
+                        j.attack_activate()
+                        activated_cells[2].append(j)
+                if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) <= self.walk_radius:
+                    if j.ontop == 0:
+                        j.activate()
+                        activated_cells[1].append(j)
         activated_cells[0].append(self.cell)
 
     def deactivate(self):
         for i in activated_cells:
             for j in i:
                 j.deactivate()
-        activated_cells[0], activated_cells[1] = [], []
+        activated_cells[0], activated_cells[1], activated_cells[2] = [], [], []
+
+    def is_destroyed(self):
+        if self.health <= 0:
+            self.cell.ontop = 0
+            self.kill()
+            return True
+        return False
 
 class Footman(Unit):
     def __init__(self, cell, color):
@@ -141,14 +168,16 @@ class Footman(Unit):
         self.MaxHealth = 100
         self.health = 100
         self.cost = 10
-        self.attack_radius = 4
-        self.damage = 10
+        self.attack_radius = 2
+        self.damage = 30
+        self.walk_radius=5
         if color == "Red":
             self.image=pygame.transform.scale(pygame.image.load(path.join(img_dir, "Units/red_footman.png")), (Cells_edge-1, Cells_edge-1))
         elif color == "Blue":
             self.image=pygame.transform.scale(pygame.image.load(path.join(img_dir, "Units/blue_footman.png")), (Cells_edge-1, Cells_edge-1))
-        self.rect=self.image.get_rect(center=self.cell.rect.center)
+        self.rect = self.image.get_rect(center=self.cell.rect.center)
         self.HPbar = Unit_HealthBar(color, self)
+        all_sprites.add(self.HPbar)
 
 def Field_Create():
     # Создание поля
@@ -258,7 +287,7 @@ CurrentColor="Red"
 running = True
 exit_menu_running = False
 
-activated_cells=[[],[]]
+activated_cells = [[], [], []]
 
 while running:
     clock.tick(FPS)
@@ -318,7 +347,7 @@ while running:
                             field[i // number_cells_width][i % number_cells_width].ontop = units_blue[-1]
                         swap_color()
 
-            if len(activated_cells[0])!=0:
+            if len(activated_cells[0]) != 0:
                 if event.button == 1:
                     for i in activated_cells[1]:
                         if i.rect.collidepoint(pygame.mouse.get_pos()):
@@ -328,6 +357,14 @@ while running:
                             i.ontop=tUnit
                             tUnit.deactivate()
                             swap_color()
+                    if len(activated_cells[2]) != 0:
+                        for j in activated_cells[2]:
+                            if j.rect.collidepoint(pygame.mouse.get_pos()):
+                                j.ontop.health -= activated_cells[0][0].ontop.damage
+                                j.ontop.is_destroyed()
+
+                                swap_color()
+
 
             if Base_red.is_destroyed(): #Проверка баз на разрушение
                 running=False
