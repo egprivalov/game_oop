@@ -131,22 +131,45 @@ class Unit(pygame.sprite.Sprite):
         self.damage = 0
         self.color = color
 
-
     def update(self):
         self.HPbar.update()
         self.rect = self.image.get_rect(center=self.cell.rect.center)
 
     def activate(self):
+        attack_radius_line = [[], [], [], []] # Координаты точек, с верхней клетки по часовой стрелке
         for i in field:
             for j in i:
-                if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) <= self.attack_radius and j.ontop != 0:
+                if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) <= self.attack_radius and j.ontop != 0 and not ((j.numbx-self.cell.numbx == 0)  and (abs(j.numby - self.cell.numby) == self.attack_radius) or (j.numby-self.cell.numby == 0)  and (abs(j.numbx - self.cell.numbx) == self.attack_radius)):
                     if j.ontop.color != self.color:
                         j.attack_activate()
                         activated_cells[2].append(j)
-                if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) <= self.walk_radius:
+                """    if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) == self.attack_radius:
+                        if j.numby-self.cell.numby >= 0:
+                            if j.numbx - self.cell.numbx >= 0:
+                                attack_radius_line[0].append(j.rect.topright)
+                                attack_radius_line[0].append(j.rect.bottomright)
+                                print(j.rect.topright, j.rect.bottomright)
+                            else:
+                                attack_radius_line[3].append(j.rect.topleft)
+                                attack_radius_line[3].append(j.rect.topright)
+                                print(j.rect.topleft, j.rect.topright)
+                        else:
+                            if j.numbx - self.cell.numbx >= 0:
+                                attack_radius_line[0].append(j.rect.topleft)
+                                attack_radius_line[0].append(j.rect.bottomleft)
+                                print(j.rect.topleft, j.rect.bottomleft)
+                            else:
+                                attack_radius_line[3].append(j.rect.bottomleft)
+                                attack_radius_line[3].append(j.rect.topleft)
+                                print(j.rect.bottomleft, j.rect.topleft) """
+
+                if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) <= self.walk_radius and not ((j.numbx-self.cell.numbx == 0)  and (abs(j.numby - self.cell.numby) == self.walk_radius) or (j.numby-self.cell.numby == 0)  and (abs(j.numbx - self.cell.numbx) == self.walk_radius)):
                     if j.ontop == 0:
                         j.activate()
                         activated_cells[1].append(j)
+        """ attack_radius_line = [attack_radius_line[0] + attack_radius_line[1] + attack_radius_line[2], attack_radius_line[3]]
+        print(attack_radius_line)
+        pygame.draw.lines(screen, WHITE, True, attack_radius_line, Cells_edge//10) """
         activated_cells[0].append(self.cell)
 
     def deactivate(self):
