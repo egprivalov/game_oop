@@ -146,59 +146,60 @@ class Unit(pygame.sprite.Sprite):
         attack_radius_line = [[[],[]],[[],[]]] # Координаты точек, с верхней клетки по часовой стрелке
         for i in field:
             for j in i:
-                if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) <= self.attack_radius and j.ontop != 0 and not ((j.numbx-self.cell.numbx == 0)  and (abs(j.numby - self.cell.numby) == self.attack_radius) or (j.numby-self.cell.numby == 0)  and (abs(j.numbx - self.cell.numbx) == self.attack_radius)):
-                    if j.ontop.color != self.color:
-                        j.attack_activate()
-                        activated_cells[2].append(j)
-                if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) == self.attack_radius and not ((j.numbx-self.cell.numbx == 0)  and (abs(j.numby - self.cell.numby) == self.attack_radius) or (j.numby-self.cell.numby == 0)  and (abs(j.numbx - self.cell.numbx) == self.attack_radius)):
-                    if j.numby < self.cell.numby:
-                        attack_radius_line[0][1].append(j)
-                    else:
-                        attack_radius_line[0][0].append(j)
+                if sqrt((j.rect.center[0] - self.rect.center[0])**2 + (j.rect.center[1] - self.rect.center[1])**2) < self.attack_radius*Cells_edge:
+                    if j.ontop !=0:
+                        if j.ontop.color != self.color:
+                            j.attack_activate()
+                            activated_cells[2].append(j)
+#                if sqrt((j.rect.center[0] - self.rect.center[0])**2 + (j.rect.center[1] - self.rect.center[1])**2) == self.attack_radius*Cells_edge-1:
+#                    if j.numby < self.cell.numby:
+#                        attack_radius_line[0][1].append(j)
+#                    else:
+#                        attack_radius_line[0][0].append(j)
 
-                if abs(j.numbx-self.cell.numbx)+abs(j.numby - self.cell.numby) <= self.walk_radius and not ((j.numbx-self.cell.numbx == 0)  and (abs(j.numby - self.cell.numby) == self.walk_radius) or (j.numby-self.cell.numby == 0)  and (abs(j.numbx - self.cell.numbx) == self.walk_radius)):
+                if sqrt((j.rect.center[0] - self.rect.center[0])**2 + (j.rect.center[1] - self.rect.center[1])**2) < self.walk_radius*Cells_edge:
                     if j.ontop == 0:
                         j.activate()
                         activated_cells[1].append(j)
         activated_cells[0].append(self.cell)
 
-        attack_radius_line[0][0]=sorted(attack_radius_line[0][0], key=lambda x: x.numbx, reverse=True)
-        attack_radius_line[0][1] = sorted(attack_radius_line[0][1], key=lambda x: x.numbx)
+#        attack_radius_line[0][0]=sorted(attack_radius_line[0][0], key=lambda x: x.numbx, reverse=True)
+#        attack_radius_line[0][1] = sorted(attack_radius_line[0][1], key=lambda x: x.numbx)
 
 
-        for i in attack_radius_line[0][1]:
-            if i.numbx<self.cell.numbx:
-                attack_radius_line[1][0].append((i.rect.left, i.rect.bottom))
-                attack_radius_line[1][0].append((i.rect.left, i.rect.top))
-                attack_radius_line[1][0].append((i.rect.right, i.rect.top))
-            else:
-                attack_radius_line[1][0].append((i.rect.left, i.rect.top))
-                attack_radius_line[1][0].append((i.rect.right, i.rect.top))
-                attack_radius_line[1][0].append((i.rect.right, i.rect.bottom))
+#        for i in attack_radius_line[0][1]:
+#            if i.numbx<self.cell.numbx:
+#                attack_radius_line[1][0].append((i.rect.left, i.rect.bottom))
+#                attack_radius_line[1][0].append((i.rect.left, i.rect.top))
+#                attack_radius_line[1][0].append((i.rect.right, i.rect.top))
+#            else:
+#                attack_radius_line[1][0].append((i.rect.left, i.rect.top))
+#                attack_radius_line[1][0].append((i.rect.right, i.rect.top))
+#                attack_radius_line[1][0].append((i.rect.right, i.rect.bottom))#
 
-        for i in attack_radius_line[0][0]:
-            if i.numbx<self.cell.numbx:
-                attack_radius_line[1][1].append((i.rect.right, i.rect.bottom))
-                attack_radius_line[1][1].append((i.rect.left, i.rect.bottom))
-                attack_radius_line[1][1].append((i.rect.left, i.rect.top))
-            else:
-                attack_radius_line[1][1].append((i.rect.right, i.rect.top))
-                attack_radius_line[1][1].append((i.rect.right, i.rect.bottom))
-                attack_radius_line[1][1].append((i.rect.left, i.rect.bottom))
+#        for i in attack_radius_line[0][0]:
+#            if i.numbx<self.cell.numbx:
+#                attack_radius_line[1][1].append((i.rect.right, i.rect.bottom))
+#                attack_radius_line[1][1].append((i.rect.left, i.rect.bottom))
+#                attack_radius_line[1][1].append((i.rect.left, i.rect.top))
+#            else:
+#                attack_radius_line[1][1].append((i.rect.right, i.rect.top))
+#                attack_radius_line[1][1].append((i.rect.right, i.rect.bottom))
+#                attack_radius_line[1][1].append((i.rect.left, i.rect.bottom))
+#
+ #       if sqrt((field[0][0].rect.center[0] - self.rect.center[0])**2 + (field[0][0].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
+#            self.attack_line.append((field[0][0].rect.left, field[0][0].rect.top))
 
-        if sqrt((field[0][0].rect.center[0] - self.rect.center[0])**2 + (field[0][0].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
-            self.attack_line.append((field[0][0].rect.left, field[0][0].rect.top))
+#        if sqrt((field[0][number_cells_width-1].rect.center[0] - self.rect.center[0])**2 + (field[0][number_cells_width-1].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
+#            self.attack_line.append((field[0][number_cells_width-1].rect.right, field[0][number_cells_width-1].rect.top))
+#
+#        if sqrt((field[number_cells_height-1][number_cells_width-1].rect.center[0] - self.rect.center[0])**2 + (field[number_cells_height-1][number_cells_width-1].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
+#            self.attack_line.append((field[number_cells_height-1][number_cells_width-1].rect.right, field[number_cells_height-1][number_cells_width-1].rect.bottom))
 
-        if sqrt((field[0][number_cells_width-1].rect.center[0] - self.rect.center[0])**2 + (field[0][number_cells_width-1].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
-            self.attack_line.append((field[0][number_cells_width-1].rect.right, field[0][number_cells_width-1].rect.top))
+#        if sqrt((field[number_cells_height-1][0].rect.center[0] - self.rect.center[0])**2 + (field[number_cells_height-1][0].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
+#            self.attack_line.append((field[number_cells_height-1][0].rect.left, field[number_cells_height-1][0].rect.bottom))
 
-        if sqrt((field[number_cells_height-1][number_cells_width-1].rect.center[0] - self.rect.center[0])**2 + (field[number_cells_height-1][number_cells_width-1].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
-            self.attack_line.append((field[number_cells_height-1][number_cells_width-1].rect.right, field[number_cells_height-1][number_cells_width-1].rect.bottom))
-
-        if sqrt((field[number_cells_height-1][0].rect.center[0] - self.rect.center[0])**2 + (field[number_cells_height-1][0].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
-            self.attack_line.append((field[number_cells_height-1][0].rect.left, field[number_cells_height-1][0].rect.bottom))
-
-        self.attack_line=self.attack_line+attack_radius_line[1][1][::-1]+attack_radius_line[1][0][::-1]
+#        self.attack_line=self.attack_line+attack_radius_line[1][1][::-1]+attack_radius_line[1][0][::-1]
 
     def deactivate(self):
         for i in activated_cells:
@@ -220,9 +221,9 @@ class Footman(Unit):
         self.MaxHealth = 100
         self.health = 100
         self.cost = 10
-        self.attack_radius = 50
+        self.attack_radius = 10
         self.damage = 30
-        self.walk_radius=5
+        self.walk_radius = 10
         if color == "Red":
             self.image=pygame.transform.scale(pygame.image.load(path.join(img_dir, "Units/red_footman.png")), (Cells_edge-1, Cells_edge-1))
         elif color == "Blue":
@@ -282,9 +283,9 @@ def Draw_Screen(screen):
     units_red_sprites.draw(screen)
     units_blue_sprites.draw(screen)
 
-    if len(activated_cells[0]) != 0:
-        if len(activated_cells[0][0].ontop.attack_line) != 0:
-            pygame.draw.lines(screen, WHITE, True, activated_cells[0][0].ontop.attack_line)
+#    if len(activated_cells[0]) != 0:
+#        if len(activated_cells[0][0].ontop.attack_line) != 0:
+#            pygame.draw.lines(screen, WHITE, True, activated_cells[0][0].ontop.attack_line)
 
     pygame.display.flip()
 
