@@ -52,7 +52,7 @@ class Base(pygame.sprite.Sprite):
         self.color=player_color
         if self.color == "Blue":
             self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "База_синяя.png")), (Cells_edge*2-Cells_edge//10, Cells_edge*2-Cells_edge//10))
-            self.cells = [field[21][71], field[22][71], field[21][72], field[22][72]]
+            self.cells = [field[number_cells_height-3][number_cells_width-4], field[number_cells_height-4][number_cells_width-4], field[number_cells_height-4][number_cells_width-3], field[number_cells_height-3][number_cells_width-3]]
         else:
             self.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "База_красная.png")), (Cells_edge * 2 - Cells_edge // 10, Cells_edge * 2 - Cells_edge // 10))
             self.cells = [field[2][2], field[2][3], field[3][2], field[3][3]]
@@ -62,7 +62,6 @@ class Base(pygame.sprite.Sprite):
         self.rect.center=(self.x, self.y)
 
     def is_destroyed(self): #Функция проверки разрушенности базы. Возвращает истину, в случае , если база разрушена
-        global running
         if not self.health>0:
             return (True)
         return (False)
@@ -143,7 +142,7 @@ class Unit(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=self.cell.rect.center)
 
     def activate(self):
-        attack_radius_line = [[[],[]],[[],[]]] # Координаты точек, с верхней клетки по часовой стрелке
+        attack_cells = [[] for _ in range(number_cells_height)] # Координаты точек, с верхней клетки по часовой стрелке
         for i in field:
             for j in i:
                 if sqrt((j.rect.center[0] - self.rect.center[0])**2 + (j.rect.center[1] - self.rect.center[1])**2) < self.attack_radius*Cells_edge:
@@ -151,55 +150,53 @@ class Unit(pygame.sprite.Sprite):
                         if j.ontop.color != self.color:
                             j.attack_activate()
                             activated_cells[2].append(j)
-#                if sqrt((j.rect.center[0] - self.rect.center[0])**2 + (j.rect.center[1] - self.rect.center[1])**2) == self.attack_radius*Cells_edge-1:
-#                    if j.numby < self.cell.numby:
-#                        attack_radius_line[0][1].append(j)
-#                    else:
-#                        attack_radius_line[0][0].append(j)
+                    attack_cells[j.numby].append(j)
 
-                if sqrt((j.rect.center[0] - self.rect.center[0])**2 + (j.rect.center[1] - self.rect.center[1])**2) < self.walk_radius*Cells_edge:
+                if sqrt((j.rect.center[0] - self.rect.center[0]) ** 2 + (j.rect.center[1] - self.rect.center[1]) ** 2) < self.walk_radius * Cells_edge:
                     if j.ontop == 0:
                         j.activate()
                         activated_cells[1].append(j)
+
         activated_cells[0].append(self.cell)
 
-#        attack_radius_line[0][0]=sorted(attack_radius_line[0][0], key=lambda x: x.numbx, reverse=True)
-#        attack_radius_line[0][1] = sorted(attack_radius_line[0][1], key=lambda x: x.numbx)
+        attack_line=[[], [], [], []]
+
+        for i in attack_cells[:self.cell.numby:]:
+            if len(i) != 0:
+                attack_line[0].append(i[0])
+                attack_line[1].append(i[-1])
 
 
-#        for i in attack_radius_line[0][1]:
-#            if i.numbx<self.cell.numbx:
-#                attack_radius_line[1][0].append((i.rect.left, i.rect.bottom))
-#                attack_radius_line[1][0].append((i.rect.left, i.rect.top))
-#                attack_radius_line[1][0].append((i.rect.right, i.rect.top))
-#            else:
-#                attack_radius_line[1][0].append((i.rect.left, i.rect.top))
-#                attack_radius_line[1][0].append((i.rect.right, i.rect.top))
-#                attack_radius_line[1][0].append((i.rect.right, i.rect.bottom))#
+        for i in attack_cells[self.cell.numby::]:
+            if len(i) != 0:
+                attack_line[2].append(i[-1])
+                attack_line[3].append(i[0])
 
-#        for i in attack_radius_line[0][0]:
-#            if i.numbx<self.cell.numbx:
-#                attack_radius_line[1][1].append((i.rect.right, i.rect.bottom))
-#                attack_radius_line[1][1].append((i.rect.left, i.rect.bottom))
-#                attack_radius_line[1][1].append((i.rect.left, i.rect.top))
-#            else:
-#                attack_radius_line[1][1].append((i.rect.right, i.rect.top))
-#                attack_radius_line[1][1].append((i.rect.right, i.rect.bottom))
-#                attack_radius_line[1][1].append((i.rect.left, i.rect.bottom))
-#
- #       if sqrt((field[0][0].rect.center[0] - self.rect.center[0])**2 + (field[0][0].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
-#            self.attack_line.append((field[0][0].rect.left, field[0][0].rect.top))
 
-#        if sqrt((field[0][number_cells_width-1].rect.center[0] - self.rect.center[0])**2 + (field[0][number_cells_width-1].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
-#            self.attack_line.append((field[0][number_cells_width-1].rect.right, field[0][number_cells_width-1].rect.top))
-#
-#        if sqrt((field[number_cells_height-1][number_cells_width-1].rect.center[0] - self.rect.center[0])**2 + (field[number_cells_height-1][number_cells_width-1].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
-#            self.attack_line.append((field[number_cells_height-1][number_cells_width-1].rect.right, field[number_cells_height-1][number_cells_width-1].rect.bottom))
 
-#        if sqrt((field[number_cells_height-1][0].rect.center[0] - self.rect.center[0])**2 + (field[number_cells_height-1][0].rect.center[1] - self.rect.center[1])**2) <= self.attack_radius*Cells_edge:
-#            self.attack_line.append((field[number_cells_height-1][0].rect.left, field[number_cells_height-1][0].rect.bottom))
+        attack_line[0] = sorted(attack_line[0][::-1], key=lambda x: x.numbx)
+        attack_line[1] = sorted(attack_line[1], key=lambda x: x.numbx)
+        attack_line[2] = sorted(attack_line[2], key=lambda x: x.numbx, reverse=True)
+        attack_line[3] = sorted(attack_line[3][::-1], key=lambda x: x.numbx, reverse=True)
+        attack_line_points = [[], []]
 
-#        self.attack_line=self.attack_line+attack_radius_line[1][1][::-1]+attack_radius_line[1][0][::-1]
+        for i in attack_line[0]:
+            attack_line_points[0].append((i.rect.left, i.rect.bottom))
+            attack_line_points[0].append((i.rect.left, i.rect.top))
+
+        for i in attack_line[1]:
+            attack_line_points[0].append((i.rect.right, i.rect.top))
+            attack_line_points[0].append((i.rect.right, i.rect.bottom))
+
+        for i in attack_line[2]:
+            attack_line_points[1].append((i.rect.right, i.rect.top))
+            attack_line_points[1].append((i.rect.right, i.rect.bottom))
+
+        for i in attack_line[3]:
+            attack_line_points[1].append((i.rect.left, i.rect.bottom))
+            attack_line_points[1].append((i.rect.left, i.rect.top))
+
+        self.attack_line= attack_line_points[0] + attack_line_points[1]
 
     def deactivate(self):
         for i in activated_cells:
@@ -221,7 +218,7 @@ class Footman(Unit):
         self.MaxHealth = 100
         self.health = 100
         self.cost = 10
-        self.attack_radius = 10
+        self.attack_radius = 5
         self.damage = 30
         self.walk_radius = 10
         if color == "Red":
@@ -283,9 +280,9 @@ def Draw_Screen(screen):
     units_red_sprites.draw(screen)
     units_blue_sprites.draw(screen)
 
-#    if len(activated_cells[0]) != 0:
-#        if len(activated_cells[0][0].ontop.attack_line) != 0:
-#            pygame.draw.lines(screen, WHITE, True, activated_cells[0][0].ontop.attack_line)
+    if len(activated_cells[0]) != 0:
+        if len(activated_cells[0][0].ontop.attack_line) != 0:
+            pygame.draw.lines(screen, WHITE, True, activated_cells[0][0].ontop.attack_line)
 
     pygame.display.flip()
 
@@ -341,12 +338,53 @@ Game_Initialize()
 CurrentColor="Red"
 
 # Игровой цикл
-running = True
+buying_running = True
+game_running = False
 exit_menu_running = False
 
 activated_cells = [[], [], []]
 
-while running:
+# Стадия закупки
+while buying_running:
+    clock.tick(FPS)
+    screen.fill(Field_GREEN)
+
+    field_sprites.update()
+    all_sprites.update()
+    units_red_sprites.update()
+    units_blue_sprites.update()
+
+    Draw_Screen(screen)
+
+    # Проверка событий
+    for event in pygame.event.get():
+        # проверить закрытие окна
+        if event.type == pygame.QUIT:  # Проверка закрытия окна
+            buying_running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button ==1: # Проверка нажатия левой кнопки мыши
+                if exit_button.rect.collidepoint(pygame.mouse.get_pos()):  # Проверка нажатия на кнопку выхода
+                    buying_running = False
+
+            if event.button == 3:  # Проверка нажатия правой кнопки мыши
+                for i in range(len(field_sprites)):
+                    if field[i // number_cells_width][i % number_cells_width].rect.collidepoint(pygame.mouse.get_pos()): #Постановка юнитов
+                        if field[i // number_cells_width][i % number_cells_width].ontop == 0:
+                            if CurrentColor == "Red":
+                                units_red.append(Footman(field[i // number_cells_width][i % number_cells_width], CurrentColor))
+                                units_red_sprites.add(units_red[-1])
+                                field[i // number_cells_width][i % number_cells_width].ontop = units_red[-1]
+                            else:
+                                units_blue.append(Footman(field[i // number_cells_width][i % number_cells_width], CurrentColor))
+                                units_blue_sprites.add(units_blue[-1])
+                                field[i // number_cells_width][i % number_cells_width].ontop = units_blue[-1]
+                            swap_color()
+
+                        #else:
+
+
+# Стадия Игры
+while game_running:
     clock.tick(FPS)
     screen.fill(Field_GREEN)
 
@@ -361,7 +399,7 @@ while running:
     for event in pygame.event.get():
         # проверить закрытие окна
         if event.type == pygame.QUIT: #Проверка закрытия окна
-            running = False
+            game_running = False
         if event.type == pygame.MOUSEBUTTONDOWN: #Проверка нажатия мыши
             if event.button == 1: #Проверка нажатия левой кнопки
                 for i in range(len(field_sprites)):
@@ -386,24 +424,13 @@ while running:
                                 field[i // number_cells_width][i % number_cells_width].ontop.activate()
 
                 if exit_button.rect.collidepoint(pygame.mouse.get_pos()): #Проверка нажатия на кнопку выхода
-                    running=False
+                    game_running=False
                 if Base_red.rect.collidepoint(pygame.mouse.get_pos()):#Урона по базе от нажатия
                     Base_red.health-=random.randint(1,10)*50
                 if Base_blue.rect.collidepoint(pygame.mouse.get_pos()):
                     Base_blue.health-=random.randint(1,10)*50
-            if event.button==3: #Проверка нажатия правой кнопки мыши
-                for i in range(len(field_sprites)):
-                    if field[i // number_cells_width][i % number_cells_width].rect.collidepoint(pygame.mouse.get_pos()) and field[i // number_cells_width][i % number_cells_width].ontop == 0:
-                        if CurrentColor == "Red":
-                            units_red.append(Footman(field[i // number_cells_width][i % number_cells_width], CurrentColor))
-                            units_red_sprites.add(units_red[-1])
-                            field[i // number_cells_width][i % number_cells_width].ontop = units_red[-1]
-                        else:
-                            units_blue.append(Footman(field[i // number_cells_width][i % number_cells_width], CurrentColor))
-                            units_blue_sprites.add(units_blue[-1])
-                            field[i // number_cells_width][i % number_cells_width].ontop = units_blue[-1]
-                        swap_color()
 
+            #Передвижение Юнитов
             if len(activated_cells[0]) != 0:
                 if event.button == 1:
                     for i in activated_cells[1]:
@@ -424,11 +451,11 @@ while running:
 
 
             if Base_red.is_destroyed(): #Проверка баз на разрушение
-                running=False
+                game_running=False
                 Winner="Синие"
                 exit_menu_running=True
             if Base_blue.is_destroyed():
-                running=False
+                game_running=False
                 Winner="Красные"
                 exit_menu_running=True
 
@@ -454,7 +481,7 @@ while exit_menu_running:
     for event in pygame.event.get():
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.type == pygame.QUIT:
-                running = False
+                game_running = False
             if exit_button.rect.collidepoint(pygame.mouse.get_pos()):
                 exit_menu_running = False
 pygame.quit()
