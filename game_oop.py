@@ -41,7 +41,28 @@ class Grass(Cell):
                                                 (Cells_edge, Cells_edge))
             self.activated = False
 
+#Класс Игрока
+class Player():
+    def __init__(self, color):
+        self.color = color  #Цвет игрока
+        self.money = Start_Money  #Деньги игрока
+        self.army = pygame.sprite.Group()  #Армия игрока
+        if self.color == "Red":  #База игрока
+            self.base = Base(Width_empty+Cells_edge*3, Height_empty+Cells_edge*3, "Red")
+        else:
+            self.base = Base(Width - (Width_empty + Cells_edge * 3), Height - (Height_empty + Cells_edge * 3), "Blue")
 
+    def can_spend(self, amount):
+        if self.money - amount >= 0:
+            return(True)
+        else:
+            return(False)
+
+    def spend(self, amount):
+        self.money-=amount
+
+    def is_dead(self):
+        return self.base.is_destroyed()
 
 #Класс базы
 class Base(pygame.sprite.Sprite):
@@ -109,7 +130,7 @@ class Unit_HealthBar(HealthBar):
         self.height = Cells_edge//6
         self.width = Cells_edge-2
         self.image = pygame.Surface((self.width, self.height))
-        self.rect = self.image.get_rect(center=(self.unit.rect.center[0], self.unit.rect.top - Cells_edge//10))
+        self.rect = self.image.get_rect(center=(self.unit.rect.center[0], self.unit.rect.top - Cells_edge//5))
         if self.color == "Red":
             self.image.fill(RED)
         elif self.color == "Blue":
@@ -129,12 +150,13 @@ class Unit(pygame.sprite.Sprite):
         self.health = 0
         self.MaxHealth = 0
         self.cell = cell
-        self.cell.ontop=self
+        self.cell.ontop = self
         self.cost = 0
         self.attack_radius = 0
         self.walk_radius = 0
         self.damage = 0
         self.color = color
+        self.HPbar = pygame.sprite.Sprite()
         self.attack_line = []
 
     def update(self):
@@ -172,8 +194,6 @@ class Unit(pygame.sprite.Sprite):
                 attack_line[2].append(i[-1])
                 attack_line[3].append(i[0])
 
-
-
         attack_line[0] = sorted(attack_line[0][::-1], key=lambda x: x.numbx)
         attack_line[1] = sorted(attack_line[1], key=lambda x: x.numbx)
         attack_line[2] = sorted(attack_line[2], key=lambda x: x.numbx, reverse=True)
@@ -197,6 +217,7 @@ class Unit(pygame.sprite.Sprite):
             attack_line_points[1].append((i.rect.left, i.rect.top))
 
         self.attack_line= attack_line_points[0] + attack_line_points[1]
+        print(self.attack_line)
 
     def deactivate(self):
         for i in activated_cells:
@@ -212,14 +233,20 @@ class Unit(pygame.sprite.Sprite):
             return True
         return False
 
+    def sell(self):
+        PlayerByColor[CurrentColor].money += self.cost
+        self.cell.ontop = 0
+        self.HPbar.kill()
+        self.kill()
+
 class Footman(Unit):
     def __init__(self, cell, color):
         Unit.__init__(self, cell, color)
         self.MaxHealth = 100
         self.health = 100
-        self.cost = 10
-        self.attack_radius = 5
-        self.damage = 30
+        self.cost = 100
+        self.attack_radius = 20
+        self.damage = 50
         self.walk_radius = 10
         if color == "Red":
             self.image=pygame.transform.scale(pygame.image.load(path.join(img_dir, "Units/red_footman.png")), (Cells_edge-1, Cells_edge-1))
@@ -228,6 +255,13 @@ class Footman(Unit):
         self.rect = self.image.get_rect(center=self.cell.rect.center)
         self.HPbar = Unit_HealthBar(color, self)
         all_sprites.add(self.HPbar)
+
+def CreateUnit(cell):
+    if CurrentUnit == "Footman":
+        tunit = Footman(cell, CurrentColor)
+    UnitsSpritesByColor[CurrentColor].add(tunit)
+    cell.ontop = tunit
+    PlayerByColor[CurrentColor].spend(tunit.cost)
 
 def Field_Create():
     # Создание поля
@@ -246,20 +280,38 @@ def Field_Create():
         for j in range(number_cells_width):
             field[i].append(Grass(j * Cells_edge + Width_empty, i * Cells_edge + Height_empty))
             field_sprites.add(field[i][j])
-    #Базы
-    global Base_red, Base_blue, Base_red_HealthBar, Base_blue_HealthBar
-    Base_red = Base(Width_empty+Cells_edge*3, Height_empty+Cells_edge*3, "Red")
-    Base_blue = Base(Width-(Width_empty+Cells_edge*3), Height-(Height_empty+Cells_edge*3), "Blue")
-    bases.add(Base_red)
-    bases.add(Base_blue)
-    for i in Base_red.cells:
-        i.ontop=Base_red
-    for i in Base_blue.cells:
-        i.ontop = Base_blue
+    #Игроки
+    global Player_Red, Player_Blue, Bases
+    #Красный игрок
+    Player_Red = Player("Red")
+    # Синий игрок
+    Player_Blue = Player("Blue")
+
+    Player_Red.base = Base(Width_empty+Cells_edge*3, Height_empty+Cells_edge*3, "Red")
+    Player_Blue.base = Base(Width-(Width_empty+Cells_edge*3), Height-(Height_empty+Cells_edge*3), "Blue")
+
+    Bases = pygame.sprite.Group()
+    Bases.add(Player_Red.base, Player_Blue.base)
+
+    #Массив игроков
+    Players = [Player_Red, Player_Blue]
+    for i in Players:
+        for j in i.base.cells:
+            j.ontop=i.base
+
     #Полоски здоровья
-    Base_red_HealthBar = Base_HealthBar("Red", Base_red)
-    Base_blue_HealthBar = Base_HealthBar("Blue", Base_blue)
+    Base_red_HealthBar = Base_HealthBar("Red", Player_Red.base)
+    Base_blue_HealthBar = Base_HealthBar("Blue", Player_Blue.base)
     all_sprites.add(Base_red_HealthBar, Base_blue_HealthBar)
+
+    #Кнопка подтверждения
+    global Confirm_button
+    Confirm_button = pygame.sprite.Sprite()
+    Confirm_button.image = pygame.transform.scale(pygame.image.load(path.join(img_dir, "Кнопка подтверждения.jpg")),
+                                                  (Cells_edge * 5, Cells_edge * 3))
+    Confirm_button.rect = Confirm_button.image.get_rect(
+        center=(Width - Width_empty - Cells_edge * 2.5, Height_empty - Height_empty // 2))
+    all_sprites.add(Confirm_button)
 
 def Game_Initialize():
     # Инициализация
@@ -276,13 +328,28 @@ def Draw_Screen(screen):
     # Отрисовка поля
     field_sprites.draw(screen)
     all_sprites.draw(screen)
-    bases.draw(screen)
+    Bases.draw(screen)
     units_red_sprites.draw(screen)
     units_blue_sprites.draw(screen)
 
     if len(activated_cells[0]) != 0:
         if len(activated_cells[0][0].ontop.attack_line) != 0:
             pygame.draw.lines(screen, WHITE, True, activated_cells[0][0].ontop.attack_line)
+    pygame.sprite.Group(Player_Red.base)
+
+    if buying_running:
+        font = pygame.font.SysFont("None", 55, True)
+        money_print = font.render(str(PlayerByColor[CurrentColor].money), True, YELLOW)
+        money_rect = money_print.get_rect(center = (Width - 150, 33))
+        screen.blit(money_print, money_rect)
+
+        put_line_red = [(418, 182), (418, 202), (418, 202), (418, 222), (418, 222), (418, 242), (418, 242), (418, 262), (418, 262), (418, 282), (418, 282), (418, 302), (418, 302), (418, 322), (398, 322), (398, 342), (398, 342), (398, 362), (378, 362), (378, 382), (378, 382), (378, 402), (358, 402), (358, 422), (338, 422), (338, 442), (338, 442), (338, 462), (318, 462), (318, 482), (298, 482), (298, 502), (258, 502), (258, 522), (238, 522), (238, 542), (198, 542), (198, 562), (158, 562), (158, 582), (18, 582), (18, 562), (18, 562), (18, 542), (18, 542), (18, 522), (18, 522), (18, 502), (18, 502), (18, 482), (18, 482), (18, 462), (18, 462), (18, 442), (18, 442), (18, 422), (18, 422), (18, 402), (18, 402), (18, 382), (18, 382), (18, 362), (18, 362), (18, 342), (18, 342), (18, 322), (18, 322), (18, 302), (18, 302), (18, 282), (18, 282), (18, 262), (18, 262), (18, 242), (18, 242), (18, 222), (18, 222), (18, 202), (18, 202), (18, 182)]
+        put_line_blue = [(1118, 662), (1118, 642), (1118, 642), (1118, 622), (1118, 622), (1118, 602), (1118, 602), (1118, 582), (1118, 582), (1118, 562), (1118, 562), (1118, 542), (1138, 542), (1138, 522), (1138, 522), (1138, 502), (1158, 502), (1158, 482), (1158, 482), (1158, 462), (1178, 462), (1178, 442), (1198, 442), (1198, 422), (1198, 422), (1198, 402), (1218, 402), (1218, 382), (1238, 382), (1238, 362), (1278, 362), (1278, 342), (1298, 342), (1298, 322), (1338, 322), (1338, 302), (1378, 302), (1378, 282), (1518, 282), (1518, 302), (1518, 302), (1518, 322), (1518, 322), (1518, 342), (1518, 342), (1518, 362), (1518, 362), (1518, 382), (1518, 382), (1518, 402), (1518, 402), (1518, 422), (1518, 422), (1518, 442), (1518, 442), (1518, 462), (1518, 462), (1518, 482), (1518, 482), (1518, 502), (1518, 502), (1518, 522), (1518, 522), (1518, 542), (1518, 542), (1518, 562), (1518, 562), (1518, 582), (1518, 582), (1518, 602), (1518, 602), (1518, 622), (1518, 622), (1518, 642), (1518, 642), (1518, 662), (1518, 662), (1518, 682), (1118, 682), (1118, 662)]
+
+        if CurrentColor == "Red":
+            pygame.draw.lines(screen, RED, True, put_line_red, 3)
+        else:
+            pygame.draw.lines(screen, BLUE, True, put_line_blue, 3)
 
     pygame.display.flip()
 
@@ -292,6 +359,7 @@ def swap_color():
         CurrentColor="Blue"
     else:
         CurrentColor="Red"
+
     if len(activated_cells[0]) != 0:
         activated_cells[0][0].ontop.deactivate()
 
@@ -322,20 +390,29 @@ GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 Field_GREEN = (0,32,0)
+
 #Путь к директории с картинками
 img_dir=path.join(path.dirname(__file__), "Resources")
 
+#Начальное количество денег у игроков
+Start_Money = 1000
+
 all_sprites = pygame.sprite.Group()
-bases = pygame.sprite.Group()
-units_red = []
-units_blue = []
 units_red_sprites = pygame.sprite.Group()
 units_blue_sprites = pygame.sprite.Group()
 
 Field_Create()
 Game_Initialize()
 
-CurrentColor="Red"
+PlayerByColor = {"Red": Player_Red, "Blue": Player_Blue}
+UnitsSpritesByColor = {"Red": units_red_sprites, "Blue": units_blue_sprites}
+UnitsCosts = {"Footman": 100}
+
+CurrentColor = "Red"
+CurrentUnit = "Footman"
+
+put_field={"Red": {0: 19, 1: 19, 2: 19, 3: 19, 4: 19, 5: 19, 6: 19, 7: 18, 8: 18, 9: 17, 10: 17, 11: 16, 12: 15, 13: 15, 14: 14, 15: 13, 16: 11, 17: 10, 18: 8, 19: 6},
+           "Blue": {24: 55, 23: 55, 22: 55, 21: 55, 20: 55, 19: 55, 18: 55, 17: 56, 16: 56, 15: 57, 14: 57, 13: 58, 12: 59, 11: 59, 10: 60, 9: 61, 8: 63, 7: 64, 6: 66, 5: 68}}
 
 # Игровой цикл
 buying_running = True
@@ -363,24 +440,34 @@ while buying_running:
             buying_running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button ==1: # Проверка нажатия левой кнопки мыши
-                if exit_button.rect.collidepoint(pygame.mouse.get_pos()):  # Проверка нажатия на кнопку выхода
+                # Проверка нажатия на кнопку выхода
+                if exit_button.rect.collidepoint(pygame.mouse.get_pos()):
                     buying_running = False
 
-            if event.button == 3:  # Проверка нажатия правой кнопки мыши
-                for i in range(len(field_sprites)):
-                    if field[i // number_cells_width][i % number_cells_width].rect.collidepoint(pygame.mouse.get_pos()): #Постановка юнитов
-                        if field[i // number_cells_width][i % number_cells_width].ontop == 0:
-                            if CurrentColor == "Red":
-                                units_red.append(Footman(field[i // number_cells_width][i % number_cells_width], CurrentColor))
-                                units_red_sprites.add(units_red[-1])
-                                field[i // number_cells_width][i % number_cells_width].ontop = units_red[-1]
-                            else:
-                                units_blue.append(Footman(field[i // number_cells_width][i % number_cells_width], CurrentColor))
-                                units_blue_sprites.add(units_blue[-1])
-                                field[i // number_cells_width][i % number_cells_width].ontop = units_blue[-1]
-                            swap_color()
+                # Проверка нажатия на кнопку подтверждения
+                if Confirm_button.rect.collidepoint(pygame.mouse.get_pos()):
+                    if CurrentColor == "Red":
+                        swap_color()
+                    else:
+                        buying_running = False
+                        game_running = True
+                        Confirm_button.kill()
+                        swap_color()
 
-                        #else:
+            if event.button == 3:  # Проверка нажатия правой кнопки мыши
+                for i in field:
+                    for j in i:
+                        if j.rect.collidepoint(pygame.mouse.get_pos()): #Постановка юнитов
+                            if j.ontop == 0:
+                                if (put_field[CurrentColor][j.numby] >= j.numbx and CurrentColor == "Red") or (put_field[CurrentColor][j.numby] <= j.numbx and CurrentColor == "Blue"):
+                                    if PlayerByColor[CurrentColor].can_spend(UnitsCosts[CurrentUnit]):
+                                        CreateUnit(j)
+
+                                    else:
+                                        print("Денег нема")
+
+                            else:  #Убрать юнита
+                                j.ontop.sell()
 
 
 # Стадия Игры
@@ -425,10 +512,6 @@ while game_running:
 
                 if exit_button.rect.collidepoint(pygame.mouse.get_pos()): #Проверка нажатия на кнопку выхода
                     game_running=False
-                if Base_red.rect.collidepoint(pygame.mouse.get_pos()):#Урона по базе от нажатия
-                    Base_red.health-=random.randint(1,10)*50
-                if Base_blue.rect.collidepoint(pygame.mouse.get_pos()):
-                    Base_blue.health-=random.randint(1,10)*50
 
             #Передвижение Юнитов
             if len(activated_cells[0]) != 0:
@@ -450,11 +533,11 @@ while game_running:
                                 swap_color()
 
 
-            if Base_red.is_destroyed(): #Проверка баз на разрушение
+            if Player_Red.is_dead(): #Проверка баз на разрушение
                 game_running=False
                 Winner="Синие"
                 exit_menu_running=True
-            if Base_blue.is_destroyed():
+            if Player_Blue.is_dead():
                 game_running=False
                 Winner="Красные"
                 exit_menu_running=True
