@@ -41,6 +41,35 @@ class Grass(Cell):
                                                 (Cells_edge, Cells_edge))
             self.activated = False
 
+class Unit_Cell(pygame.sprite.Sprite):
+    def __init__(self, unit, numb):
+        global screen
+        pygame.sprite.Sprite.__init__(self)
+        basecenter=((Width_empty+Cells_edge * 20), (Height_empty - Cells_edge*2))
+        self.edge=Cells_edge*2
+        self.numb = numb
+        cent = (basecenter[0]+numb*self.edge, basecenter[1])
+        self.unit = unit
+        self.image = pygame.transform.scale(unit.image, (self.edge, self.edge))
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.center = cent
+        self.color = (120,120,120)
+        self.activated = False
+
+    def update(self):
+        if CurrentColor != self.unit.color:
+            self.unit = units_false[CurrentColor][self.numb]
+            self.image = pygame.transform.scale(self.unit.image, (self.edge,self.edge))
+
+    def activate(self):
+        if not self.activated:
+            self.color = (50, 50, 50)
+            self.activated = True
+        else:
+            self.color = (120, 120, 120)
+            self.activated = False
+
 #Класс Игрока
 class Player():
     def __init__(self, color):
@@ -217,7 +246,6 @@ class Unit(pygame.sprite.Sprite):
             attack_line_points[1].append((i.rect.left, i.rect.top))
 
         self.attack_line= attack_line_points[0] + attack_line_points[1]
-        print(self.attack_line)
 
     def deactivate(self):
         for i in activated_cells:
@@ -245,9 +273,10 @@ class Footman(Unit):
         self.MaxHealth = 100
         self.health = 100
         self.cost = 100
-        self.attack_radius = 20
+        self.attack_radius = 4
         self.damage = 50
-        self.walk_radius = 10
+        self.walk_radius = 7
+        self.name = "Footman"
         if color == "Red":
             self.image=pygame.transform.scale(pygame.image.load(path.join(img_dir, "Units/red_footman.png")), (Cells_edge-1, Cells_edge-1))
         elif color == "Blue":
@@ -313,6 +342,12 @@ def Field_Create():
         center=(Width - Width_empty - Cells_edge * 2.5, Height_empty - Height_empty // 2))
     all_sprites.add(Confirm_button)
 
+    #Клетки Юнитов
+    for i in range(len(units_false[CurrentColor])):
+        unit_cells.add(Unit_Cell(units_false[CurrentColor][i], i))
+
+
+
 def Game_Initialize():
     # Инициализация
     global clock
@@ -342,6 +377,11 @@ def Draw_Screen(screen):
         money_print = font.render(str(PlayerByColor[CurrentColor].money), True, YELLOW)
         money_rect = money_print.get_rect(center = (Width - 150, 33))
         screen.blit(money_print, money_rect)
+        unit_cells.update()
+        for i in unit_cells:
+            pygame.draw.rect(screen, i.color, i.rect)
+            pygame.draw.rect(screen, WHITE, i.rect, 1)
+        unit_cells.draw(screen)
 
         put_line_red = [(418, 182), (418, 202), (418, 202), (418, 222), (418, 222), (418, 242), (418, 242), (418, 262), (418, 262), (418, 282), (418, 282), (418, 302), (418, 302), (418, 322), (398, 322), (398, 342), (398, 342), (398, 362), (378, 362), (378, 382), (378, 382), (378, 402), (358, 402), (358, 422), (338, 422), (338, 442), (338, 442), (338, 462), (318, 462), (318, 482), (298, 482), (298, 502), (258, 502), (258, 522), (238, 522), (238, 542), (198, 542), (198, 562), (158, 562), (158, 582), (18, 582), (18, 562), (18, 562), (18, 542), (18, 542), (18, 522), (18, 522), (18, 502), (18, 502), (18, 482), (18, 482), (18, 462), (18, 462), (18, 442), (18, 442), (18, 422), (18, 422), (18, 402), (18, 402), (18, 382), (18, 382), (18, 362), (18, 362), (18, 342), (18, 342), (18, 322), (18, 322), (18, 302), (18, 302), (18, 282), (18, 282), (18, 262), (18, 262), (18, 242), (18, 242), (18, 222), (18, 222), (18, 202), (18, 202), (18, 182)]
         put_line_blue = [(1118, 662), (1118, 642), (1118, 642), (1118, 622), (1118, 622), (1118, 602), (1118, 602), (1118, 582), (1118, 582), (1118, 562), (1118, 562), (1118, 542), (1138, 542), (1138, 522), (1138, 522), (1138, 502), (1158, 502), (1158, 482), (1158, 482), (1158, 462), (1178, 462), (1178, 442), (1198, 442), (1198, 422), (1198, 422), (1198, 402), (1218, 402), (1218, 382), (1238, 382), (1238, 362), (1278, 362), (1278, 342), (1298, 342), (1298, 322), (1338, 322), (1338, 302), (1378, 302), (1378, 282), (1518, 282), (1518, 302), (1518, 302), (1518, 322), (1518, 322), (1518, 342), (1518, 342), (1518, 362), (1518, 362), (1518, 382), (1518, 382), (1518, 402), (1518, 402), (1518, 422), (1518, 422), (1518, 442), (1518, 442), (1518, 462), (1518, 462), (1518, 482), (1518, 482), (1518, 502), (1518, 502), (1518, 522), (1518, 522), (1518, 542), (1518, 542), (1518, 562), (1518, 562), (1518, 582), (1518, 582), (1518, 602), (1518, 602), (1518, 622), (1518, 622), (1518, 642), (1518, 642), (1518, 662), (1518, 662), (1518, 682), (1118, 682), (1118, 662)]
@@ -359,7 +399,10 @@ def swap_color():
         CurrentColor="Blue"
     else:
         CurrentColor="Red"
-
+    CurrentUnit = ""
+    for i in unit_cells:
+        if i.activated:
+            i.activate()
     if len(activated_cells[0]) != 0:
         activated_cells[0][0].ontop.deactivate()
 
@@ -367,6 +410,8 @@ def swap_color():
 #Размеры экрана
 Width=ctypes.windll.user32.GetSystemMetrics(0)
 Height=ctypes.windll.user32.GetSystemMetrics(1)
+
+# Лучше не трогать
 #Количество клеток в строке
 number_cells_width = 75
 #Количество строк
@@ -395,21 +440,30 @@ Field_GREEN = (0,32,0)
 img_dir=path.join(path.dirname(__file__), "Resources")
 
 #Начальное количество денег у игроков
-Start_Money = 1000
+Start_Money = 5000
+
+field=[[Grass(0, 0)]]
+CurrentColor = "Red"
 
 all_sprites = pygame.sprite.Group()
 units_red_sprites = pygame.sprite.Group()
 units_blue_sprites = pygame.sprite.Group()
 
-Field_Create()
+#Ложные юниты
+units_false = {"Red": [Footman(field[0][0], "Red")], "Blue": [Footman(field[0][0], "Blue")]}
+
+#Клетки с юнитами
+unit_cells = pygame.sprite.Group()
+
 Game_Initialize()
+Field_Create()
+
 
 PlayerByColor = {"Red": Player_Red, "Blue": Player_Blue}
 UnitsSpritesByColor = {"Red": units_red_sprites, "Blue": units_blue_sprites}
 UnitsCosts = {"Footman": 100}
 
-CurrentColor = "Red"
-CurrentUnit = "Footman"
+CurrentUnit = ""
 
 put_field={"Red": {0: 19, 1: 19, 2: 19, 3: 19, 4: 19, 5: 19, 6: 19, 7: 18, 8: 18, 9: 17, 10: 17, 11: 16, 12: 15, 13: 15, 14: 14, 15: 13, 16: 11, 17: 10, 18: 8, 19: 6},
            "Blue": {24: 55, 23: 55, 22: 55, 21: 55, 20: 55, 19: 55, 18: 55, 17: 56, 16: 56, 15: 57, 14: 57, 13: 58, 12: 59, 11: 59, 10: 60, 9: 61, 8: 63, 7: 64, 6: 66, 5: 68}}
@@ -453,6 +507,15 @@ while buying_running:
                         game_running = True
                         Confirm_button.kill()
                         swap_color()
+                for i in unit_cells:
+                    if i.rect.collidepoint(pygame.mouse.get_pos()):
+                        if not i.activated:
+                            CurrentUnit = i.unit.name
+                            i.activate()
+                            print(CurrentUnit)
+                        else:
+                            CurrentUnit=""
+                            i.activate()
 
             if event.button == 3:  # Проверка нажатия правой кнопки мыши
                 for i in field:
@@ -460,11 +523,9 @@ while buying_running:
                         if j.rect.collidepoint(pygame.mouse.get_pos()): #Постановка юнитов
                             if j.ontop == 0:
                                 if (put_field[CurrentColor][j.numby] >= j.numbx and CurrentColor == "Red") or (put_field[CurrentColor][j.numby] <= j.numbx and CurrentColor == "Blue"):
-                                    if PlayerByColor[CurrentColor].can_spend(UnitsCosts[CurrentUnit]):
-                                        CreateUnit(j)
-
-                                    else:
-                                        print("Денег нема")
+                                    if CurrentUnit != "":
+                                        if PlayerByColor[CurrentColor].can_spend(UnitsCosts[CurrentUnit]):
+                                            CreateUnit(j)
 
                             else:  #Убрать юнита
                                 j.ontop.sell()
