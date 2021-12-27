@@ -529,22 +529,6 @@ def Draw_Screen(screen):
         money_rect = money_print.get_rect(center=(Width - 150, 33))
         screen.blit(money_print, money_rect)
 
-        put_line_red = [(523, 169), (523, 204), (523, 204), (523, 239), (523, 239), (523, 274), (523, 274), (523, 309),
-                        (523, 309), (523, 344), (488, 344), (488, 379), (488, 379), (488, 414), (453, 414), (453, 449),
-                        (453, 449), (453, 484), (418, 484), (418, 519), (383, 519), (383, 554), (313, 554), (313, 589),
-                        (243, 589), (243, 624), (68, 624), (68, 589), (68, 589), (68, 554), (68, 554), (68, 519),
-                        (68, 519), (68, 484), (68, 484), (68, 449), (68, 449), (68, 414), (68, 414), (68, 379),
-                        (68, 379), (68, 344), (68, 344), (68, 309), (68, 309), (68, 274), (68, 274), (68, 239),
-                        (68, 239), (68, 204), (68, 204), (68, 169)]
-        put_line_blue = [(1013, 659), (1013, 624), (1013, 624), (1013, 589), (1013, 589), (1013, 554), (1013, 554),
-                         (1013, 519), (1048, 519), (1048, 484), (1048, 484), (1048, 449), (1083, 449), (1083, 414),
-                         (1083, 414), (1083, 379), (1118, 379), (1118, 344), (1153, 344), (1153, 309), (1223, 309),
-                         (1223, 274), (1293, 274), (1293, 239), (1468, 239), (1468, 274), (1468, 274), (1468, 309),
-                         (1468, 309), (1468, 344), (1468, 344), (1468, 379), (1468, 379), (1468, 414), (1468, 414),
-                         (1468, 449), (1468, 449), (1468, 484), (1468, 484), (1468, 519), (1468, 519), (1468, 554),
-                         (1468, 554), (1468, 589), (1468, 589), (1468, 624), (1468, 624), (1468, 659), (1468, 659),
-                         (1468, 694), (1013, 694), (1013, 659)]
-
         if CurrentColor == "Red":
             pygame.draw.lines(screen, RED, True, put_line_red, 3)
         else:
@@ -642,6 +626,9 @@ CurrentUnit = ""
 put_field = {
     "Red": {0: 12, 1: 12, 2: 12, 3: 12, 4: 12, 5: 11, 6: 11, 7: 10, 8: 10, 9: 9, 10: 8, 11: 6, 12: 4, 13: 0, 14: 0},
     "Blue": {14: 27, 13: 27, 12: 27, 11: 27, 10: 27, 9: 28, 8: 28, 7: 29, 6: 29, 5: 30, 4: 31, 3: 33, 2: 35, 1: 40, 0: 40}}
+
+put_line_red = [field[0][0].rect.topleft, field[0][12].rect.topright, field[0][12].rect.bottomright, field[1][12].rect.topright, field[1][12].rect.bottomright, field[2][12].rect.topright, field[2][12].rect.bottomright, field[3][12].rect.topright, field[3][12].rect.bottomright, field[4][12].rect.topright, field[4][12].rect.bottomright, field[5][11].rect.topright, field[5][11].rect.bottomright, field[6][11].rect.topright, field[6][11].rect.bottomright, field[7][10].rect.topright, field[7][10].rect.bottomright, field[8][10].rect.topright, field[8][10].rect.bottomright, field[9][9].rect.topright, field[9][9].rect.bottomright, field[10][8].rect.topright, field[10][8].rect.bottomright, field[11][6].rect.topright, field[11][6].rect.bottomright, field[12][4].rect.topright, field[12][4].rect.bottomright, field[12][0].rect.bottomleft]
+put_line_blue = [field[14][39].rect.bottomright, field[14][27].rect.bottomleft, field[14][27].rect.topleft, field[13][27].rect.bottomleft, field[13][27].rect.topleft, field[12][27].rect.bottomleft, field[12][27].rect.topleft, field[11][27].rect.bottomleft, field[11][27].rect.topleft, field[10][27].rect.bottomleft, field[10][27].rect.topleft, field[9][28].rect.bottomleft, field[9][28].rect.topleft, field[8][28].rect.bottomleft, field[8][28].rect.topleft, field[7][29].rect.bottomleft, field[7][29].rect.topleft, field[6][29].rect.bottomleft, field[6][29].rect.topleft, field[5][30].rect.bottomleft, field[5][30].rect.topleft, field[4][31].rect.bottomleft, field[4][31].rect.topleft, field[3][33].rect.bottomleft, field[3][33].rect.topleft, field[2][35].rect.bottomleft, field[2][35].rect.topleft, field[2][39].rect.topright]
 
 # Игровой цикл
 buying_running = True
